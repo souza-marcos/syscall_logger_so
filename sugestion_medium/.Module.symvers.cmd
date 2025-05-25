@@ -1,0 +1,1 @@
+savedcmd_/home/neg/syscall_logger/sugestion_medium/Module.symvers :=  scripts/mod/modpost -M -m -a      -o /home/neg/syscall_logger/sugestion_medium/Module.symvers -T /home/neg/syscall_logger/sugestion_medium/modules.order -i Module.symvers -e 

@@ -1,0 +1,1 @@
+savedcmd_/home/neg/syscall_logger/modern_solution/Module.symvers :=  scripts/mod/modpost -M -m -a      -o /home/neg/syscall_logger/modern_solution/Module.symvers -T /home/neg/syscall_logger/modern_solution/modules.order -i Module.symvers -e 

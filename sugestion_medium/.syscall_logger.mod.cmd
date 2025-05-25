@@ -1,0 +1,1 @@
+savedcmd_/home/neg/syscall_logger/sugestion_medium/syscall_logger.mod := printf '%s\n'   syscall_logger.o | awk '!x[$$0]++ { print("/home/neg/syscall_logger/sugestion_medium/"$$0) }' > /home/neg/syscall_logger/sugestion_medium/syscall_logger.mod

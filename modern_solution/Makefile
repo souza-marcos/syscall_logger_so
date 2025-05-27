@@ -1,4 +1,4 @@
-obj-m += syscall_logger.o
+obj-m += logsyscall.o
 
 all:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules

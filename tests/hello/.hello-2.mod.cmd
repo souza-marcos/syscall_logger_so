@@ -1,0 +1,1 @@
+savedcmd_/home/neg/syscall_logger/tests/hello/hello-2.mod := printf '%s\n'   hello-2.o | awk '!x[$$0]++ { print("/home/neg/syscall_logger/tests/hello/"$$0) }' > /home/neg/syscall_logger/tests/hello/hello-2.mod

@@ -1,0 +1,1 @@
+savedcmd_/home/neg/syscall_logger/tests/hello/modules.order := {   echo /home/neg/syscall_logger/tests/hello/hello-1.o;   echo /home/neg/syscall_logger/tests/hello/hello-2.o;   echo /home/neg/syscall_logger/tests/hello/hello-sysfs.o; :; } > /home/neg/syscall_logger/tests/hello/modules.order

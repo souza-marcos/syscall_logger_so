@@ -12,10 +12,8 @@
 
 static uid_t uid = -1;
 module_param(uid, int, 0644);
-
 static char *syscall_syms = NULL; // Look in /proc/kallsyms
 module_param(syscall_syms, charp, 0644);
-
 static struct kprobe *kprobes = NULL;
 static char **syscall_names = NULL;
 static int num_syscalls = 0;
@@ -30,12 +28,7 @@ static int sys_call_kprobe_pre_handler(struct kprobe *p, struct pt_regs *regs){
 	return 0;
 }
 
-// static struct kprobe syscall_kprobe = {
-// 	.symbol_name = "__x64_sys_openat",
-// 	.pre_handler = sys_call_kprobe_pre_handler,
-// };
-
-static int __init syscall_steal_start(void){
+static int __init logsys_start(void){
 	int err = 0, i = 0;
     char *str, *token, *saveptr = NULL;
 
@@ -123,7 +116,7 @@ static int __init syscall_steal_start(void){
 	return 0;
 }
 
-static void __exit syscall_steal_end(void){
+static void __exit logsys_end(void){
 	int i;
     if (kprobes) {
         for (i = 0; i < num_syscalls; i++)
@@ -138,11 +131,11 @@ static void __exit syscall_steal_end(void){
     pr_info("Monitoring stopped\n");
 }
 
-module_init(syscall_steal_start);
-module_exit(syscall_steal_end);
+module_init(logsys_start);
+module_exit(logsys_end);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Marcos, Julio e Victor");
 MODULE_DESCRIPTION("Monitor multiple syscalls for a specific UID");
 
 // To use this module
-// sudo insmod syscall-steal.ko uid=1000 
+// sudo insmod syscall-steal.ko uid=1000  syscall_syms="__x64_sys_execve,__x64_sys_kill"

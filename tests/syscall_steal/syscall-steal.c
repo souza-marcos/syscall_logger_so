@@ -38,7 +38,7 @@ static struct kprobe syscall_kprobe = {
 	.pre_handler = sys_call_kprobe_pre_handler,
 };
 
-static int __init syscall_steal_start(void){
+static int __init logsys_start(void){
 	int err = 0;
 	syscall_kprobe.symbol_name = syscall_sym;
 	err = register_kprobe(&syscall_kprobe);
@@ -55,7 +55,7 @@ static void __exit syscall_steal_end(void){
 	unregister_kprobe(&syscall_kprobe);
 }
 
-module_init(syscall_steal_start);
+module_init(logsys_start);
 module_exit(syscall_steal_end);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Marcos");

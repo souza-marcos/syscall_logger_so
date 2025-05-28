@@ -1,1 +1,0 @@
-savedcmd_/home/neg/syscall_logger/tests/hello/hello-sysfs.ko := ld -r -m elf_x86_64 -z noexecstack --no-warn-rwx-segments --build-id=sha1  -T scripts/module.lds -o /home/neg/syscall_logger/tests/hello/hello-sysfs.ko /home/neg/syscall_logger/tests/hello/hello-sysfs.o /home/neg/syscall_logger/tests/hello/hello-sysfs.mod.o

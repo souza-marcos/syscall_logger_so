@@ -1,0 +1,13 @@
+neg@neg-VirtualBox:/proc$ sudo cat kallsyms | grep call_table
+[sudo] password for neg: 
+ffffffff826003a0 D sys_call_table
+ffffffff83815c00 d bpf_syscall_table
+
+It was funny, when you type the command without sudo the result is all zeros in address column
+
+$ sudo insmod syscall-steal.ko sym=0x....a0
+
+We have to care about a randomization system that may exists in the kernel 
+
+
+

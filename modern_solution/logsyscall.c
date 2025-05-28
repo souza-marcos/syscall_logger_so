@@ -1,97 +1,148 @@
-#include <linux/module.h>
 #include <linux/kernel.h>
-#include <linux/kprobes.h>
-#include <linux/version.h>
-#include <linux/sched.h>
+#include <linux/init.h> /* For the macros */
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/unistd.h> /* The list of system calls */
+#include <linux/cred.h>   /* current_uid() */
+#include <linux/uidgid.h>
+#include <linux/printk.h>
 #include <linux/uaccess.h>
+#include <linux/kprobes.h>
+#include <linux/string.h>
 
+static uid_t uid = -1;
+module_param(uid, int, 0644);
+
+static char *syscall_syms = NULL; // Look in /proc/kallsyms
+module_param(syscall_syms, charp, 0644);
+
+static struct kprobe *kprobes = NULL;
+static char **syscall_names = NULL;
+static int num_syscalls = 0;
+
+static int sys_call_kprobe_pre_handler(struct kprobe *p, struct pt_regs *regs){
+	if(__kuid_val(current_uid()) != uid){
+		return 0;
+	}
+    const char *syscall_name = (const char *) p->symbol_name;
+
+    pr_info("%s called by %d\n", syscall_name, uid);
+	return 0;
+}
+
+// static struct kprobe syscall_kprobe = {
+// 	.symbol_name = "__x64_sys_openat",
+// 	.pre_handler = sys_call_kprobe_pre_handler,
+// };
+
+static int __init syscall_steal_start(void){
+	int err = 0, i = 0;
+    char *str, *token, *saveptr = NULL;
+
+    if(!syscall_syms){
+        pr_err("syscall_syms parameter is required\n");
+        return -EINVAL;
+    }
+
+    str = kstrdup(syscall_syms, GFP_KERNEL);
+    if(!str) 
+        return -ENOMEM;
+
+    num_syscalls = 0;
+    saveptr = str;
+    while ((token = strsep(&saveptr, ",")) != NULL) {
+        if (*token != '\0') 
+            num_syscalls++;
+    }
+    kfree(str);
+    
+    if(num_syscalls == 0){
+        pr_err("No syscalls specified\n");
+        return -EINVAL;
+    }
+
+    syscall_names = kmalloc_array(num_syscalls, sizeof(char*), GFP_KERNEL);
+    kprobes = kmalloc_array(num_syscalls, sizeof(struct kprobe), GFP_KERNEL);
+
+    if(!syscall_names || !kprobes){
+        kfree(syscall_names);
+        kfree(kprobes);
+        return -ENOMEM;
+    }
+
+    str = kstrdup(syscall_syms, GFP_KERNEL);
+    if(!str){
+        kfree(syscall_names);
+        kfree(kprobes);
+        return -ENOMEM;
+    }
+
+    saveptr = str;
+    for (i = 0; i < num_syscalls; ) {
+        token = strsep(&saveptr, ",");
+        if (!token || *token == '\0') 
+            continue;
+            
+        syscall_names[i] = kstrdup(token, GFP_KERNEL);
+        if (!syscall_names[i]) {
+            while (--i >= 0)
+                kfree(syscall_names[i]);
+            kfree(syscall_names);
+            kfree(kprobes);
+            kfree(str);
+            return -ENOMEM;
+        }
+        i++;
+    }
+    kfree(str);
+
+    for(i = 0; i < num_syscalls; i ++){
+        kprobes[i] = (struct kprobe){
+            .symbol_name = syscall_names[i],
+            .pre_handler = sys_call_kprobe_pre_handler
+        };
+    }
+
+    for(i = 0; i < num_syscalls; i ++){
+        err = register_kprobe(&kprobes[i]);
+        if(err < 0){
+            pr_err("Failed to register kprobe for %s: %d\n", syscall_names[i], err);
+            while(--i >= 0){
+                unregister_kprobe(&kprobes[i]);
+            }
+            for(i = 0; i < num_syscalls; i++){
+                kfree(syscall_names[i]);
+            }
+            kfree(syscall_names);
+            kfree(kprobes);
+            return err;
+        }
+    }
+
+	pr_info("Monitoring %d syscalls for UID:%d\n", num_syscalls, uid);
+	return 0;
+}
+
+static void __exit syscall_steal_end(void){
+	int i;
+    if (kprobes) {
+        for (i = 0; i < num_syscalls; i++)
+            unregister_kprobe(&kprobes[i]);
+        kfree(kprobes);
+    }
+    if (syscall_names) {
+        for (i = 0; i < num_syscalls; i++)
+            kfree(syscall_names[i]);
+        kfree(syscall_names);
+    }
+    pr_info("Monitoring stopped\n");
+}
+
+module_init(syscall_steal_start);
+module_exit(syscall_steal_end);
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("UFMG - Júlio, Marcos, Victor");
-MODULE_DESCRIPTION("Syscall Hooking with Kprobes");
+MODULE_AUTHOR("Marcos, Julio e Victor");
+MODULE_DESCRIPTION("Monitor multiple syscalls for a specific UID");
 
-// Kprobes for syscalls
-static struct kprobe kp_execve, kp_open, kp_kill;
-
-// Handler for sys_execve
-static int handler_pre_execve(struct kprobe *p, struct pt_regs *regs) {
-    char __user *filename = (char __user *)regs->di; // Pathname (arg1)
-    char buf[256];
-    long ret;
-
-    // Safely copy filename from userspace
-    ret = strncpy_from_user(buf, filename, sizeof(buf) - 1);
-    if (ret > 0) {
-        buf[ret] = '\0';
-        pr_info("execve: %s (PID: %d)\n", buf, current->pid);
-    }
-
-    return 0; // Allow syscall to proceed
-}
-
-// Handler for sys_open
-static int handler_pre_open(struct kprobe *p, struct pt_regs *regs) {
-    char __user *filename = (char __user *)regs->di; // Pathname (arg1)
-    char buf[256];
-    long ret;
-
-    ret = strncpy_from_user(buf, filename, sizeof(buf) - 1);
-    if (ret > 0) {
-        buf[ret] = '\0';
-        pr_info("open: %s (PID: %d)\n", buf, current->pid);
-    }
-
-    return 0;
-}
-
-// Handler for sys_kill
-static int handler_pre_kill(struct kprobe *p, struct pt_regs *regs) {
-    pid_t pid = (pid_t)regs->di; // PID (arg1)
-    int sig = (int)regs->si;      // Signal (arg2)
-
-    pr_info("kill: PID=%d, Signal=%d (Caller PID: %d)\n", pid, sig, current->pid);
-    return 0;
-}
-
-// Register kprobes
-static int __init hook_init(void) {
-    // Hook sys_execve
-    kp_execve.pre_handler = handler_pre_execve;
-    kp_execve.symbol_name = "__x64_sys_execve"; // Symbol name varies by kernel version
-    if (register_kprobe(&kp_execve)) {
-        pr_err("Failed to hook execve\n");
-        return -1;
-    }
-
-    // Hook sys_open
-    kp_open.pre_handler = handler_pre_open;
-    kp_open.symbol_name = "__x64_sys_open";
-    if (register_kprobe(&kp_open)) {
-        pr_err("Failed to hook open\n");
-        unregister_kprobe(&kp_execve);
-        return -1;
-    }
-
-    // Hook sys_kill
-    kp_kill.pre_handler = handler_pre_kill;
-    kp_kill.symbol_name = "__x64_sys_kill";
-    if (register_kprobe(&kp_kill)) {
-        pr_err("Failed to hook kill\n");
-        unregister_kprobe(&kp_execve);
-        unregister_kprobe(&kp_open);
-        return -1;
-    }
-
-    pr_info("Kprobes registered\n");
-    return 0;
-}
-
-// Unregister kprobes
-static void __exit hook_exit(void) {
-    unregister_kprobe(&kp_execve);
-    unregister_kprobe(&kp_open);
-    unregister_kprobe(&kp_kill);
-    pr_info("Kprobes unregistered\n");
-}
-
-module_init(hook_init);
-module_exit(hook_exit);
+// To use this module
+// sudo insmod syscall-steal.ko uid=1000 

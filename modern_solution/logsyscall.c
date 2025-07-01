@@ -138,4 +138,4 @@ MODULE_AUTHOR("Marcos, Julio e Victor");
 MODULE_DESCRIPTION("Monitor multiple syscalls for a specific UID");
 
 // To use this module
-// sudo insmod syscall-steal.ko uid=1000  syscall_syms="__x64_sys_execve,__x64_sys_kill"
+// sudo insmod logsyscall.ko uid=1000  syscall_syms="__x64_sys_execve,__x64_sys_kill,__x64_sys_exit_group,__x64_sys_clone"

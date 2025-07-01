@@ -1,1 +1,1 @@
-savedcmd_/home/neg/syscall_logger/modern_solution/modules.order := {   echo /home/neg/syscall_logger/modern_solution/logsyscall.o; :; } > /home/neg/syscall_logger/modern_solution/modules.order
+savedcmd_/home/neg/Documents/dev/so/syscall_logger_so/modern_solution/modules.order := {   echo /home/neg/Documents/dev/so/syscall_logger_so/modern_solution/logsyscall.o; :; } > /home/neg/Documents/dev/so/syscall_logger_so/modern_solution/modules.order

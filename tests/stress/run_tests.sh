@@ -18,7 +18,7 @@ CSVFILE=$OUTDIR/results.csv
 echo "test,syscall,calls,total_time_s" > "$CSVFILE"
 
 # strace options
-STRACE_OPTS="-e trace=process,signal -c"
+STRACE_OPTS="-e trace=execve,clone,kill,exit_group -c"
 
 # Define your tests as "label:pre-action"
 # (pre-action is run before invoking strace)
@@ -32,7 +32,7 @@ declare -a TESTS=(
 # RUN TESTS
 # ----------------------------------------
 
-NUM_RUNS=10
+NUM_RUNS=50
 
 for entry in "${TESTS[@]}"; do
   IFS=":" read -r label pre_action <<< "$entry"

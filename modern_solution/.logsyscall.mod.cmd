@@ -1,1 +1,0 @@
-savedcmd_/home/neg/Documents/dev/so/syscall_logger_so/modern_solution/logsyscall.mod := printf '%s\n'   logsyscall.o | awk '!x[$$0]++ { print("/home/neg/Documents/dev/so/syscall_logger_so/modern_solution/"$$0) }' > /home/neg/Documents/dev/so/syscall_logger_so/modern_solution/logsyscall.mod
